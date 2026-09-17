@@ -59,6 +59,17 @@ export function VoiceSettingsPage() {
 
   const stopPreview = () => { cancel.current?.(); cancel.current = null; setPreview(null) }
 
+  const setAlert = (rule: VoiceMapping, checked: boolean) => {
+    stopPreview()
+    const saved = loadVoiceMappings()
+    if (saved.some(row => row.id === rule.id)) {
+      try {
+        saveVoiceSettings(saved.map(row => row.id === rule.id ? { ...row, alertBeforeSpeech: checked } : row))
+      } catch { message.error('警报设置保存失败，请重试。'); return }
+    }
+    update(rule.id, { alertBeforeSpeech: checked })
+  }
+
   /** Preview exactly what this mapping's broadcast will sound like. */
   const previewRule = (rule: VoiceMapping) => {
     cancel.current?.()
@@ -115,7 +126,7 @@ export function VoiceSettingsPage() {
         </div>
 
         <div className="voice-rule-voice">
-          <Checkbox checked={rule.alertBeforeSpeech === true} onChange={event => { stopPreview(); update(rule.id, { alertBeforeSpeech: event.target.checked }) }}>播报前播放警报</Checkbox>
+          <Checkbox checked={rule.alertBeforeSpeech === true} onChange={event => setAlert(rule, event.target.checked)}>播报前播放警报</Checkbox>
           <div className="voice-rule-voice-grid">
             <label className="voice-rule-voice-field" htmlFor={`voice-${rule.id}`}><span>指定声线<small>（可选，默认按风格自动匹配）</small></span><Select id={`voice-${rule.id}`} value={rule.voiceURI} onChange={voiceURI => { stopPreview(); update(rule.id, { voiceURI }) }} options={voiceOptions} /></label>
             <div className="voice-rule-preview"><Button icon={preview === rule.id ? <Square size={14} /> : <Volume2 size={16} />} disabled={!rule.text.trim()} onClick={() => previewRule(rule)}>{preview === rule.id ? '停止试听' : '试听本条语音'}</Button></div>

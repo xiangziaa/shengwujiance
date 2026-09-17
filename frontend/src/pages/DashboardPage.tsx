@@ -56,9 +56,9 @@ export function DashboardPage() {
   const riskOption = useMemo<EChartsOption>(() => ({
     color: ['#16B364', '#80CA7B', '#F7B955', '#F04438'],
     tooltip: { trigger: 'item', formatter: '{b}<br/>{c} 份 · {d}%' },
-    legend: { orient: 'vertical', right: 2, top: 'center', icon: 'circle', itemWidth: 8 },
+    legend: { orient: 'horizontal', left: 'center', bottom: 10, width: '90%', icon: 'circle', itemWidth: 8, itemGap: 12, textStyle: { fontSize: 11 } },
     series: [{
-      type: 'pie', radius: ['56%', '78%'], center: ['34%', '50%'], minAngle: 4,
+      type: 'pie', radius: ['48%', '66%'], center: ['50%', '42%'], minAngle: 4,
       label: { show: false }, emphasis: { scaleSize: 7 },
       data: [
         { name: '安全', value: 237 },
@@ -67,7 +67,7 @@ export function DashboardPage() {
         { name: '高风险', value: 36 },
       ],
     }],
-    graphic: [{ type: 'text', left: '26%', top: '43%', style: { text: '476\n总样本', textAlign: 'center', fill: '#182230', fontSize: 16, fontWeight: 700, lineHeight: 24 } }],
+    graphic: [{ type: 'text', left: 'center', top: '34%', style: { text: '476\n总样本', textAlign: 'center', fill: '#182230', fontSize: 16, fontWeight: 700, lineHeight: 24 } }],
   }), [])
 
   const handleTrendClick = (params: ECElementEvent) => {
@@ -100,7 +100,7 @@ export function DashboardPage() {
         </SectionPanel>
         <SectionPanel title="高风险样本" subtitle="按最新检测时间排序" extra={<Button type="link" onClick={() => navigate('/samples?risk=高风险')}>查看全部</Button>}>
           <Table<Sample>
-            size="small" pagination={false} dataSource={highRisk} rowKey="id"
+            size="small" pagination={false} dataSource={highRisk} rowKey="id" scroll={{ x: 480 }}
             columns={[
               { title: '样本编号', dataIndex: 'id', render: (value: string) => <Button type="link" className="table-link" onClick={() => navigate(`/analysis/${value}`)}>{value}</Button> },
               { title: '样本名称', dataIndex: 'name', ellipsis: true },

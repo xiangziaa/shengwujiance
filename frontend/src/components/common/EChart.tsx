@@ -25,5 +25,5 @@ export function EChart({ option, height = 280, onClick, className }: EChartProps
     }
   }, [onClick, option])
 
-  return <div ref={elementRef} className={className} style={{ width: '100%', height }} />
+  return <div ref={elementRef} className={className} style={{ width: '100%', minWidth: 0, maxWidth: '100%', height }} />
 }

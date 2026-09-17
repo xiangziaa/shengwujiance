@@ -565,3 +565,18 @@ button { cursor: pointer; }
   .ai-screen-shortcuts { display: grid; top: 96px; right: 14px; width: min(180px, 42vw); max-height: calc(100% - 330px); }
   .ai-screen-dialog { top: auto; max-height: 118px; }
 }
+
+/* Reflow by available workspace width, including browser zoom and sidebar space. */
+.dashboard-page { container: dashboard / inline-size; }
+.dashboard-primary-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.3fr); }
+.dashboard-primary-grid > .section-panel { min-width: 0; }
+.dashboard-primary-grid > .section-panel:last-child { grid-column: auto; }
+.dashboard-primary-grid .section-panel-head { flex-wrap: wrap; }
+@container dashboard (max-width: 1200px) {
+  .dashboard-primary-grid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .dashboard-primary-grid > .section-panel:last-child { grid-column: 1 / -1; }
+}
+@container dashboard (max-width: 760px) {
+  .dashboard-primary-grid { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-primary-grid > .section-panel:last-child { grid-column: auto; }
+}
