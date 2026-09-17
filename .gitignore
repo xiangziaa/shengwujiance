@@ -1,0 +1,36 @@
+# Dependencies
+**/node_modules/
+**/node_modules.incompatible-backup/
+
+# Build and caches
+**/dist/
+**/.npm-cache/
+**/.vite/
+**/*.tsbuildinfo
+**/__pycache__/
+**/.pytest_cache/
+
+# Runtime output
+**/*.log
+**/logs/
+**/outputs/
+/output/
+/tmp/
+/deploy/releases/
+/deploy/latest-deployment.json
+/.reverted-voice-cache/
+/code.zip
+
+# Source media under frontend/src/assets and assets/source must remain versioned.
+
+# Local configuration and secrets
+**/.env
+**/.env.*
+!**/.env.example
+**/config.yaml
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

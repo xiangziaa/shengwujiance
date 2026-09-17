@@ -1,0 +1,15 @@
+{
+  "name": "grain-safety-intelligence",
+  "version": "2.0.0",
+  "private": true,
+  "description": "粮安智检：粮食安全检测与数字人语音演示平台",
+  "engines": { "node": "^22.12.0 || >=24.0.0" },
+  "scripts": {
+    "setup": "npm --prefix frontend ci",
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "typecheck": "npm --prefix frontend run typecheck",
+    "test": "npm --prefix frontend test"
+  }
+}
