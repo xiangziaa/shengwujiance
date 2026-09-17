@@ -19,7 +19,7 @@ interface AppState {
    * when an action refreshes it (entering the page, switching report, signing…).
    */
   reportNow: string
-  refreshReportClock: () => void
+  refreshReportClock: () => string
   refreshDemoDates: () => void
   addSample: (sample: Sample) => void
   updateSample: (sample: Sample) => void
@@ -36,7 +36,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   reports: mockReports,
   reviews: {},
   reportNow: reportClock,
-  refreshReportClock: () => { reportClock = formatTimestamp(); set({ reportNow: reportClock }) },
+  refreshReportClock: () => {
+    const now = dayjs()
+    reportClock = formatTimestamp(now.toDate())
+    set(state => ({ reportNow: reportClock, reports: state.reports.map(report => ({
+      ...report, reportNo: `LAZJ-${now.format('YYYYMMDD')}-${report.reportNo.split('-').at(-1)}`,
+    })) }))
+    return reportClock
+  },
   refreshDemoDates: () => {
     const now = dayjs()
     if (demoDate === now.format('YYYY-MM-DD')) return
@@ -85,7 +92,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const report: Report = {
       id: `RPT-${Date.now()}`,
       sampleId,
-      reportNo: `LAZJ-2026-${String(Date.now()).slice(-5)}`,
+      reportNo: `LAZJ-${dayjs().format('YYYYMMDD')}-${String(Date.now())}`,
       sampleName: sample.name,
       riskLevel: sample.riskLevel,
       status: '已生成',

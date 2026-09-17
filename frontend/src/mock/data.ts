@@ -60,10 +60,11 @@ export const toxinResults: ToxinResultInput[] = [
   { key: 'T2', name: 'T-2 毒素', value: 22, limit: 100, unit: 'μg/kg' },
 ]
 
+const initialReportDate = dayjs().format('YYYYMMDD')
 export const mockReports: Report[] = mockSamples.slice(0, 9).map((sample, index) => ({
-  id: `RPT-${String(20260714015 - index)}`,
+  id: `RPT-${initialReportDate}-${String(15 - index).padStart(3, '0')}`,
   sampleId: sample.id,
-  reportNo: `LAZJ-2026-${String(14015 - index)}`,
+  reportNo: `LAZJ-${initialReportDate}-${String(15 - index).padStart(3, '0')}`,
   sampleName: sample.name,
   riskLevel: sample.riskLevel,
   status: index === 1 ? '待签字' : index % 3 === 0 ? '已签字' : '已生成',
@@ -72,17 +73,16 @@ export const mockReports: Report[] = mockSamples.slice(0, 9).map((sample, index)
 }))
 
 export const trend7 = [
-  { date: '09-08', total: 72, positive: 8 },
-  { date: '09-09', total: 88, positive: 10 },
-  { date: '09-10', total: 96, positive: 12 },
-  { date: '09-11', total: 110, positive: 15 },
-  { date: '09-12', total: 101, positive: 13 },
-  { date: '09-13', total: 108, positive: 14 },
-  { date: '09-14', total: 128, positive: 17 },
+  { total: 72, positive: 8 },
+  { total: 88, positive: 10 },
+  { total: 96, positive: 12 },
+  { total: 110, positive: 15 },
+  { total: 101, positive: 13 },
+  { total: 108, positive: 14 },
+  { total: 128, positive: 17 },
 ]
 
 export const trend30 = Array.from({ length: 30 }, (_, index) => ({
-  date: `09-${String(index + 1).padStart(2, '0')}`,
   total: 68 + ((index * 17) % 58),
   positive: 5 + ((index * 7) % 15),
 }))
@@ -92,35 +92,35 @@ export function getRecentTrend(days: 7 | 30, now = dayjs()) {
   return values.map((item, index) => ({ ...item, date: now.subtract(days - 1 - index, 'day').format('MM-DD') }))
 }
 
-export const knowledgeArticles: KnowledgeArticle[] = [
+export const getKnowledgeArticles = (now = dayjs()): KnowledgeArticle[] => [
   {
     id: 'K001', title: 'GB 2761—2017 食品中真菌毒素限量', category: '国家标准',
-    summary: '梳理玉米及其制品中六种重点真菌毒素的限量口径与适用范围。', updatedAt: '2026-07-12', readMinutes: 8,
+    summary: '梳理玉米及其制品中六种重点真菌毒素的限量口径与适用范围。', updatedAt: now.subtract(0, 'day').format('YYYY-MM-DD'), readMinutes: 8,
     content: ['本条目用于演示标准条款的结构化检索。', '法定合规判定必须以现行有效标准、样本类别和检测方法为准。', '平台内部预警阈值用于抽检与复检决策，不替代法定结论。'],
   },
   {
     id: 'K002', title: '竞争性 ELISA 标准曲线与质量控制', category: '检测方法',
-    summary: '从 OD 原始值、标准曲线拟合到 R² 质量门槛的完整操作说明。', updatedAt: '2026-07-11', readMinutes: 6,
+    summary: '从 OD 原始值、标准曲线拟合到 R² 质量门槛的完整操作说明。', updatedAt: now.subtract(1, 'day').format('YYYY-MM-DD'), readMinutes: 6,
     content: ['检查空白孔、标准品梯度和重复孔一致性。', '标准曲线不合格时，应优先排查移液、孵育时间和洗板步骤。', '图像识别仅作为辅助录入入口，精确定量以酶标仪输出为准。'],
   },
   {
     id: 'K003', title: 'DON 与 ZEN 共存风险解读', category: '毒素知识',
-    summary: '解释镰刀菌来源毒素共存时为何需要提高监测与复检优先级。', updatedAt: '2026-07-09', readMinutes: 5,
+    summary: '解释镰刀菌来源毒素共存时为何需要提高监测与复检优先级。', updatedAt: now.subtract(3, 'day').format('YYYY-MM-DD'), readMinutes: 5,
     content: ['DON 与 ZEN 可在同批玉米样本中共同检出。', '平台在任一项目超过限值 50% 时上调内部综合风险一级。', '该规则属于内部风险预警，不等同于法定不合格。'],
   },
   {
     id: 'K004', title: 'qPCR 扩增曲线异常排查手册', category: '异常案例',
-    summary: '按基线噪声、阈值跨越、平台期和对照表现定位异常来源。', updatedAt: '2026-07-08', readMinutes: 7,
+    summary: '按基线噪声、阈值跨越、平台期和对照表现定位异常来源。', updatedAt: now.subtract(4, 'day').format('YYYY-MM-DD'), readMinutes: 7,
     content: ['先确认阳性对照正常扩增、阴性对照未越过阈值。', '基线噪声偏高可能与气泡、封膜或仪器光路有关。', '无明显平台期时建议结合扩增效率与熔解曲线复核。'],
   },
   {
     id: 'K005', title: '微孔板洗板机日常维护清单', category: '仪器操作',
-    summary: '开机、管路冲洗、针位检查和关机维护的标准步骤。', updatedAt: '2026-07-06', readMinutes: 4,
+    summary: '开机、管路冲洗、针位检查和关机维护的标准步骤。', updatedAt: now.subtract(6, 'day').format('YYYY-MM-DD'), readMinutes: 4,
     content: ['每日首次使用前执行纯水冲洗。', '检查吸液针高度，避免刮擦孔底。', '结束后按试剂说明完成管路清洁并记录维护日志。'],
   },
   {
     id: 'K006', title: '高风险批次的隔离与复检建议', category: '处置建议',
-    summary: '从批次暂存、加密取样到复检报告归档的处置闭环。', updatedAt: '2026-07-05', readMinutes: 6,
+    summary: '从批次暂存、加密取样到复检报告归档的处置闭环。', updatedAt: now.subtract(7, 'day').format('YYYY-MM-DD'), readMinutes: 6,
     content: ['将内部预警批次与普通批次分区暂存并保留追溯信息。', '按抽样规范增加复检样本量。', '复检完成后由授权人员给出最终处置结论。'],
   },
 ]

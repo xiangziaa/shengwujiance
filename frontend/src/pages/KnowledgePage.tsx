@@ -2,12 +2,13 @@ import { Button, Drawer, Empty, Input, Segmented, Tag } from 'antd'
 import { ArrowRight, BookOpen, Clock3, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { PageHeading } from '../components/common/PageHeading'
-import { knowledgeArticles } from '../mock/data'
+import { getKnowledgeArticles } from '../mock/data'
 import type { KnowledgeArticle } from '../types'
 
 const categories = ['全部', '国家标准', '检测方法', '毒素知识', '仪器操作', '异常案例', '处置建议'] as const
 
 export function KnowledgePage() {
+  const [knowledgeArticles] = useState(getKnowledgeArticles)
   const [category, setCategory] = useState<(typeof categories)[number]>('全部')
   const [keyword, setKeyword] = useState('')
   const [article, setArticle] = useState<KnowledgeArticle | null>(null)
@@ -15,7 +16,7 @@ export function KnowledgePage() {
     const categoryMatch = category === '全部' || item.category === category
     const keywordMatch = !keyword || `${item.title}${item.summary}${item.content.join('')}`.toLowerCase().includes(keyword.toLowerCase())
     return categoryMatch && keywordMatch
-  }), [category, keyword])
+  }), [category, keyword, knowledgeArticles])
 
   return (
     <div className="page knowledge-page page-enter">

@@ -56,6 +56,7 @@ export function SamplesPage() {
   const [editing, setEditing] = useState<Sample | null>(null)
   const [selectedKeys, setSelectedKeys] = useState<Key[]>([])
   const [pageSize, setPageSize] = useState(10)
+  const [exampleDate, setExampleDate] = useState(() => dayjs().format('YYYYMMDD'))
 
   useEffect(() => {
     const initial: FilterValues = {
@@ -79,6 +80,7 @@ export function SamplesPage() {
   }), [filters, samples])
 
   const openCreate = () => {
+    setExampleDate(dayjs().format('YYYYMMDD'))
     setEditing(null)
     sampleForm.resetFields()
     sampleForm.setFieldsValue({ collectedAt: dayjs(), weight: 1, testItems: ['AFB₁', 'DON', 'ZEN'] })
@@ -215,7 +217,7 @@ export function SamplesPage() {
 
       <Modal title={editing ? '编辑样本' : '新建样本'} open={modalOpen} onCancel={() => setModalOpen(false)} onOk={saveSample} okText={editing ? '保存修改' : '创建样本'} width={720}>
         <Form<SampleFormValues> form={sampleForm} layout="vertical" className="modal-form-grid">
-          <Form.Item name="name" label="样本名称" rules={[{ required: true, message: '请输入样本名称' }]}><Input placeholder="例如：玉米-20260714-01" /></Form.Item>
+          <Form.Item name="name" label="样本名称" rules={[{ required: true, message: '请输入样本名称' }]}><Input placeholder={`例如：玉米-${exampleDate}-01`} /></Form.Item>
           <Form.Item name="type" label="样本类型" rules={[{ required: true }]}><Select options={sampleTypes.map((value) => ({ value, label: value }))} /></Form.Item>
           <Form.Item name="source" label="样品来源" rules={[{ required: true }]}><Select options={['田间采样', '企业送检', '粮库抽检'].map((value) => ({ value, label: value }))} /></Form.Item>
           <Form.Item name="submitter" label="送检单位" rules={[{ required: true }]}><Input /></Form.Item>

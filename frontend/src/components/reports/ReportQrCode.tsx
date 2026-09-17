@@ -37,7 +37,7 @@ function nextRandom(state: { value: number }) {
   return state.value / 0x100000000
 }
 
-/** Stable short code shown under the mark, e.g. LAZJ-2026-14015 -> 14015. */
+/** Stable sequence suffix shown under the mark, excluding its date prefix. */
 export function verificationCodeFor(seed: string) {
   return seed.replace(/[^0-9A-Za-z]/g, '').slice(-6).toUpperCase() || 'LOCAL'
 }

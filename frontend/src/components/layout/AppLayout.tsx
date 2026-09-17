@@ -13,7 +13,7 @@ export function AppLayout() {
         {!isAiScreen && <AppHeader />}
         <main className={`app-main ${isAiScreen ? 'ai-screen-main' : ''}`}><Outlet /></main>
         {!isAiScreen && <footer className="app-footer">
-          <span>© 2026 粮安智检演示平台</span>
+          <span>© {new Date().getFullYear()} 粮安智检演示平台</span>
           <span>技术支持：400-888-1661</span>
           <span>数据安全已保护</span>
         </footer>}

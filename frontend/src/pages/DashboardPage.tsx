@@ -31,6 +31,8 @@ const suggestions = [
 export function DashboardPage() {
   const navigate = useNavigate()
   const [updatedAt] = useState(() => dayjs().format('YYYY-MM-DD HH:mm'))
+  const hour = dayjs(updatedAt).hour()
+  const greeting = hour < 6 ? '凌晨好' : hour < 12 ? '上午好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : '晚上好'
   const samples = useAppStore((state) => state.samples)
   const refreshDemoDates = useAppStore((state) => state.refreshDemoDates)
   useEffect(() => { refreshDemoDates() }, [refreshDemoDates])
@@ -79,7 +81,7 @@ export function DashboardPage() {
     <div className="page dashboard-page page-enter">
       <PageHeading
         eyebrow={`数据更新于 ${updatedAt}`}
-        title="上午好，检验员"
+        title={`${greeting}，检验员`}
         description="今日重点：7 个高风险样本与 23 个待复核任务"
         actions={<Button icon={<RefreshCw size={16} />} onClick={() => message.success('数据已刷新')}>刷新数据</Button>}
       />

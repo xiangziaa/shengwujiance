@@ -2,6 +2,7 @@ import { Button, Empty, Input, message, Modal, Segmented, Space, Tag } from 'ant
 import { Download, Eye, FileSignature, FileText, Printer, Search, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { flushSync } from 'react-dom'
 import { AiReportAssistant } from '../components/reports/AiReportAssistant'
 import { ReportPreview } from '../components/reports/ReportPreview'
 import { PageHeading } from '../components/common/PageHeading'
@@ -51,9 +52,15 @@ export function ReportsPage() {
   if (!selectedReport || !sample) return <Empty description="暂无检测报告" />
 
   const handleDownload = () => {
-    stampNow()
-    downloadReport({ report: selectedReport, sample, assessment, generatedAt: reportNow })
+    const generatedAt = stampNow()
+    const report = useAppStore.getState().reports.find(item => item.id === selectedReport.id) ?? selectedReport
+    downloadReport({ report, sample, assessment, generatedAt })
     message.success('HTML 检测报告已下载')
+  }
+
+  const handlePrint = () => {
+    flushSync(() => { stampNow() })
+    window.print()
   }
 
   const handleSign = () => {
@@ -69,7 +76,7 @@ export function ReportsPage() {
   return (
     <div className="page reports-page page-enter">
       <PageHeading title="报告中心" description={`集中预览、签字、导出检测报告，并由助手解释当前结果 · 当前时间 ${reportNow}`} actions={
-        <Space><Button icon={<Download size={16} />} onClick={handleDownload}>导出报告</Button><Button type="primary" icon={<Printer size={16} />} onClick={() => { stampNow(); window.print() }}>打印当前报告</Button></Space>
+        <Space><Button icon={<Download size={16} />} onClick={handleDownload}>导出报告</Button><Button type="primary" icon={<Printer size={16} />} onClick={handlePrint}>打印当前报告</Button></Space>
       } />
       <div className="report-toolbar">
         <Segmented value={status} onChange={(value) => setStatus(value as typeof status)} options={['全部', '待签字', '已生成', '已签字']} />
@@ -93,7 +100,7 @@ export function ReportsPage() {
           <div className="report-list-actions">
             <Button icon={<Eye size={15} />} onClick={stampNow}>预览</Button>
             <Button icon={<Download size={15} />} onClick={handleDownload}>下载</Button>
-            <Button icon={<Printer size={15} />} onClick={() => { stampNow(); window.print() }}>打印</Button>
+            <Button icon={<Printer size={15} />} onClick={handlePrint}>打印</Button>
             <Button icon={<FileSignature size={15} />} disabled={selectedReport.status === '已签字'} onClick={handleSign}>签字</Button>
             <Button danger icon={<Trash2 size={15} />} onClick={handleDelete}>删除</Button>
           </div>

@@ -43,3 +43,25 @@ const snapshot=state
 state.refreshDemoDates()
 assert.equal(state,snapshot)
 console.log('PASS: rolling 7/30 days, year/month/leap boundaries, matching sample IDs, no future dates, midnight migration preserving reviews/reports/custom samples')
+
+// Refresh on deliberate actions only; never rewrite sample timestamps.
+const sampleSnapshot = JSON.stringify(state.samples)
+const reportIds = state.reports.map(report => report.id).join(',')
+now = '2027-01-01 16:45'
+const refreshedStamp = state.refreshReportClock()
+assert.equal(refreshedStamp, state.reportNow)
+assert.equal(refreshedStamp, new Date(2027,0,1,16,45).toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}))
+assert.ok(state.reports.every(report => report.reportNo.startsWith('LAZJ-20270101-')))
+assert.equal(state.reports.map(report => report.id).join(','), reportIds)
+assert.equal(JSON.stringify(state.samples), sampleSnapshot)
+const currentArticles = data.getKnowledgeArticles(dayjs(now))
+assert.equal(currentArticles[0].updatedAt, '2027-01-01')
+assert.equal(currentArticles.at(-1).updatedAt, '2026-12-25')
+const snapshotStamp = state.reportNow
+now = '2027-01-02 09:00'
+assert.equal(state.reportNow, snapshotStamp)
+assert.equal(currentArticles[0].updatedAt, '2027-01-01')
+assert.equal(data.getKnowledgeArticles()[0].updatedAt, '2027-01-02')
+state.refreshReportClock()
+assert.ok(state.reports.every(report=>report.reportNo.startsWith('LAZJ-20270102-')))
+console.log('PASS: report clock returns fresh export timestamp, dynamic report date, stable IDs/sample times, knowledge dates across years and snapshots stay still until refreshed')
