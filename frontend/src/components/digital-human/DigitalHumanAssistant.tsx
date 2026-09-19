@@ -1,4 +1,3 @@
-import { LocalTtsStatus } from '../common/LocalTtsStatus'
 import { useDraggableAssistant } from '../../utils/useDraggableAssistant'
 import { useWakeListener } from '../../utils/useWakeListener'
 import { DigitalHumanAvatar } from './DigitalHumanAvatar'
@@ -260,7 +259,7 @@ export function DigitalHumanAssistant() {
         <div className="digital-human-stage-head">
           <span className="digital-human-status"><i />{stateLabels[displayState]}</span>
           <div className="digital-human-stage-tools"><Tooltip title="小安设置"><Link to="/voice-settings" state={{ from: location.pathname + location.search }} className="digital-human-icon-button" aria-label="小安设置"><Settings size={18} /></Link></Tooltip>
-            <LocalTtsStatus /><Tooltip title={wake.label}><button className={`digital-human-icon-button ${wakeEnabled ? 'active' : ''}`} onClick={toggleWake} aria-label={wake.needsActivation ? wake.label : wakeEnabled ? '关闭语音唤醒' : '开启语音唤醒'}><Ear size={18} /></button></Tooltip>
+            <Tooltip title={wake.label}><button className={`digital-human-icon-button ${wakeEnabled ? 'active' : ''}`} onClick={toggleWake} aria-label={wake.needsActivation ? wake.label : wakeEnabled ? '关闭语音唤醒' : '开启语音唤醒'}><Ear size={18} /></button></Tooltip>
             <Tooltip title={sound ? '关闭语音播报' : '开启语音播报'}><button className="digital-human-icon-button" onClick={toggleSound} aria-label={sound ? '关闭语音播报' : '开启语音播报'}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></Tooltip>
           </div>
         </div>
