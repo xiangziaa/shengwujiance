@@ -7,7 +7,8 @@ import 'antd/dist/reset.css'
 import './styles.css'
 import { AppRouter } from './router/AppRouter'
 
-window.speechSynthesis?.getVoices()
+// Remove obsolete recording cache; settings and downloaded files are preserved.
+try { localStorage.removeItem('bio-xiaoan-voice-packages-v1') } catch { /* Storage may be unavailable. */ }
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

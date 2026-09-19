@@ -19,9 +19,9 @@ export function writeVoiceSetting(key: string, value: unknown) {
 }
 
 // Commit all settings in a single write: failure cannot leave a partial save.
-export function saveVoiceSettings(mappings: unknown, rate?: number) {
+export function saveVoiceSettings(mappings: unknown, rate?: number, voice?: string) {
   const raw = localStorage.getItem(VOICE_SETTINGS_KEY)
   const saved = raw ? JSON.parse(raw) : {}
-  localStorage.setItem(VOICE_SETTINGS_KEY, JSON.stringify({ ...saved, 'bio-voice-mappings': mappings, ...(rate === undefined ? {} : { 'bio-voice-rate': rate }) }))
+  localStorage.setItem(VOICE_SETTINGS_KEY, JSON.stringify({ ...saved, 'bio-voice-mappings': mappings, ...(rate === undefined ? {} : { 'bio-voice-rate': rate }), ...(voice === undefined ? {} : { 'bio-voice-global': voice }) }))
   window.dispatchEvent(new Event(VOICE_SETTINGS_EVENT))
 }

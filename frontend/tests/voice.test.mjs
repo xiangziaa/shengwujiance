@@ -48,36 +48,6 @@ cleanup()
 const count=instances.length
 hook.useWakeListener(true,true,()=>{},()=>{})
 assert.equal(instances.length,count)
-let spoken=[], stopped=0, ended=0
-const speechWindow={speechSynthesis:{getVoices:()=>[{lang:'zh-CN',name:'Xiaoxiao'}],speak:u=>spoken.push(u),cancel:()=>stopped++},SpeechSynthesisUtterance:class{},setTimeout:f=>{f();return 1},clearTimeout:()=>{}}
-const speech=load('utils/naturalSpeech.ts',{window:speechWindow,SpeechSynthesisUtterance:class{constructor(text){this.text=text}}}, {'./voicePreferences':preferences})
-const cancel=speech.speakNaturalChinese('第一句。第二句！第三句。',{onEnd:()=>ended++})
-assert.equal(spoken.length,1)
-assert.equal(spoken[0].text,'第一句。第二句！第三句。')
-spoken[0].onend()
-assert.equal(ended,1)
-cancel()
-assert.ok(stopped>=2)
-console.log('PASS: mapping priority, disabled/empty rules, migration, continuous recognition, result indices, duplicate guard, recovery, permission failure, playback suspension, continuous TTS and cancellation')
-
-assert.equal(preferences.voiceStyles.length, 1)
-const brightVoice={lang:'zh-CN',name:'Microsoft Xiaoxiao',voiceURI:'bright'}
-const seriousVoice={lang:'zh-CN',name:'Microsoft Yunyang Online (Natural) - Chinese (Mainland)',voiceURI:'serious'}
-const cantonese={lang:'zh-HK',name:'Google 粤語',voiceURI:'hk'}
-speechWindow.speechSynthesis.getVoices=()=>[cantonese,brightVoice,{lang:'zh-CN',name:'Microsoft Yunjian',voiceURI:'yunjian'},seriousVoice]
-speech.speakNaturalChinese('您好，我是小安')
-assert.equal(spoken.at(-1).voice,brightVoice)
-assert.equal(spoken.at(-1).rate,1)
-assert.equal(spoken.at(-1).pitch,1.18)
-speech.speakNaturalChinese('异常预警：样品超标，请立即复核')
-assert.equal(spoken.at(-1).voice,brightVoice)
-assert.equal(spoken.at(-1).rate,1)
-assert.equal(spoken.at(-1).pitch,1.18)
-speech.speakNaturalChinese('预警测试',{}, {style:'bright',voiceURI:'bright'})
-assert.equal(spoken.at(-1).voice,brightVoice)
-assert.equal(spoken.at(-1).rate,1)
-console.log('PASS: single bright style, slower warnings and greetings, explicit voice selection')
-
 storage.clear()
 assert.equal(mappings.loadVoiceMappings().length,5)
 assert.equal(mappings.loadVoiceMappings().length,5)
@@ -195,34 +165,6 @@ assert.equal(upgraded.find(r=>r.id==='old').enabled,false)
 assert.equal(upgraded.find(r=>r.id==='custom').style,'bright')
 console.log('PASS: warning preset defaults, legacy warning migration, explicit choice preservation')
 
-// Alerts must finish before TTS; cancellation must suppress delayed callbacks.
-const audioInstances = []
-class AlertAudio {
-  constructor(url) { this.url = url; audioInstances.push(this) }
-  play() { this.played = true; return Promise.resolve() }
-  pause() { this.paused = true }
-}
-const alertSpeech = load('utils/naturalSpeech.ts', {window:speechWindow, Audio:AlertAudio, SpeechSynthesisUtterance:class{constructor(text){this.text=text}}}, {'./voicePreferences':preferences, '../assets/xiaoan-alert.wav':{default:'test-alert.wav'}})
-let startCount=0
-const beforeAlert=spoken.length
-alertSpeech.speakNaturalChinese('警报后播报', {onStart:()=>startCount++}, {style:'bright',voiceURI:'',alertBeforeSpeech:true})
-assert.equal(spoken.length,beforeAlert)
-assert.equal(audioInstances.at(-1).played,true)
-assert.equal(startCount,1)
-audioInstances.at(-1).onended()
-assert.equal(spoken.length,beforeAlert+1)
-spoken.at(-1).onstart()
-assert.equal(startCount,1)
-const cancelAlert=alertSpeech.speakNaturalChinese('取消测试', {}, {style:'bright',voiceURI:'',alertBeforeSpeech:true})
-const pendingAudio=audioInstances.at(-1)
-const lateEnd=pendingAudio.onended
-cancelAlert()
-lateEnd()
-assert.equal(pendingAudio.paused,true)
-assert.equal(spoken.length,beforeAlert+1)
-alertSpeech.speakNaturalChinese('音频失败仍播报', {}, {style:'bright',voiceURI:'',alertBeforeSpeech:true})
-audioInstances.at(-1).onerror()
-assert.equal(spoken.at(-1).text,'音频失败仍播报')
 storage.clear()
 storage.set('bio-voice-mappings',JSON.stringify([{id:'legacy',keyword:'旧设置',text:'原文',enabled:true,style:'serious',alertBeforeSpeech:true}]))
 const legacy=mappings.loadVoiceMappings().find(row=>row.id==='legacy')
@@ -231,16 +173,12 @@ assert.equal(legacy.text,'原文')
 assert.equal(mappings.resolveMappingVoice(legacy).alertBeforeSpeech,true)
 voiceStorage.saveVoiceSettings([legacy])
 assert.equal(mappings.loadVoiceMappings()[0].alertBeforeSpeech,true)
-console.log('PASS: alert ordering, cancellation, audio failure fallback, old style migration and alert persistence')
+console.log('PASS: old style migration and alert persistence')
 
 // Global speech rate: persistence, preview isolation, validation, and atomic saves.
 storage.clear()
 assert.equal(preferences.loadSpeechRate(), 1)
 voiceStorage.saveVoiceSettings(newRules, 1.2)
-speech.speakNaturalChinese('全局语速')
-assert.equal(spoken.at(-1).rate, 1.2)
-speech.speakNaturalChinese('试听', {}, {style:'bright', voiceURI:'', rate:1.5})
-assert.equal(spoken.at(-1).rate, 1.5)
 assert.equal(preferences.loadSpeechRate(), 1.2)
 voiceStorage.saveVoiceSettings(newRules)
 assert.equal(preferences.loadSpeechRate(), 1.2)
@@ -250,8 +188,6 @@ assert.throws(() => voiceStorage.saveVoiceSettings([], 0.7), /QuotaExceededError
 localStorage.setItem = write
 assert.equal(storage.get(voiceStorage.VOICE_SETTINGS_KEY), savedRateSnapshot)
 voiceStorage.saveVoiceSettings(newRules, 0.8)
-speech.speakNaturalChinese('下一次播报')
-assert.equal(spoken.at(-1).rate, 0.8)
 assert.equal(preferences.normalizeSpeechRate(20), 1.5)
 assert.equal(preferences.normalizeSpeechRate(-1), 0.7)
 assert.equal(preferences.normalizeSpeechRate(NaN), 1)
@@ -275,3 +211,85 @@ storage.clear()
 storage.set('bio-voice-mappings', JSON.stringify([{id:'default-alert-serious',keyword:'异常预警',text:'预警',enabled:true}]))
 assert.equal(mappings.loadVoiceMappings()[0].alertBeforeSpeech, true)
 console.log('PASS: fourth default warning enabled, both checkbox states persist across reload, legacy missing default and global rate preservation')
+
+// Local TTS lifecycle: order, cancellation during fetch/play, failures and rate.
+const audios = []; const revoked = []; const requests = []
+let responder = async () => ({ok:true, headers:{get:()=> 'audio/wav'}, blob:async()=>({size:50})})
+class LocalAudio {
+  constructor(url) { this.url=url; audios.push(this) }
+  play() { return Promise.resolve() }
+  pause() { this.paused=true }
+}
+const localSpeech=load('utils/naturalSpeech.ts', {
+  window:{setTimeout,clearTimeout}, AbortController, Audio:LocalAudio,
+  URL:{createObjectURL:()=> 'blob:test', revokeObjectURL:url=>revoked.push(url)},
+  fetch:async(url, options)=>{ requests.push({url,options}); return responder() },
+}, {'./voicePreferences':preferences,'./localTts':{TTS_URL:'http://127.0.0.1:8765'},'../assets/xiaoan-alert.wav':'alert.wav'})
+const tick=()=>new Promise(resolve=>setImmediate(resolve))
+let starts=0, ends=0, errors=0
+localSpeech.speakNaturalChinese('ELISA', {onStart:()=>starts++,onEnd:()=>ends++,onError:()=>errors++}, {style:'bright',voiceURI:'piper:zh_CN-huayan-medium',rate:1.2,alertBeforeSpeech:true})
+await tick()
+assert.equal(audios.at(-1).url,'alert.wav')
+assert.equal(JSON.parse(requests.at(-1).options.body).rate,1.2)
+assert.equal(JSON.parse(requests.at(-1).options.body).text,'酶联免疫吸附检测')
+audios.at(-1).onended(); await tick()
+assert.equal(audios.at(-1).url,'blob:test')
+audios.at(-1).onended(); await tick()
+assert.equal(starts,1); assert.equal(ends,1); assert.equal(errors,0); assert.ok(revoked.length)
+let release
+responder=()=>new Promise(resolve=>{release=resolve})
+const before=audios.length
+const stop=localSpeech.speakNaturalChinese('取消下载',{onEnd:()=>ends++})
+stop(); release({ok:true,headers:{get:()=> 'audio/wav'},blob:async()=>({size:50})}); await tick()
+assert.equal(audios.length,before); assert.equal(ends,1); assert.equal(requests.at(-1).options.signal.aborted,true)
+responder=async()=>{throw new TypeError('network')}
+localSpeech.speakNaturalChinese('断线',{onError:()=>errors++}); await tick(); assert.equal(errors,1)
+responder=async()=>({ok:true,headers:{get:()=> 'audio/wav'},blob:async()=>({size:50})})
+const stopAlert=localSpeech.speakNaturalChinese('停止警报',{onEnd:()=>ends++},{style:'bright',voiceURI:'',alertBeforeSpeech:true})
+await tick(); const alertCount=audios.length; stopAlert(); await tick(); assert.equal(audios.length,alertCount); assert.equal(ends,1)
+assert.equal(mappings.loadVoiceMappings().some(row=>row.voiceURI==='serious'),false)
+console.log('PASS: local TTS rate, normalized text, alert order, cleanup, cancellation and offline-service error')
+
+voiceStorage.saveVoiceSettings([
+ {id:'assistant-standard',keyword:'标准',text:'检测结果',enabled:true,style:'bright',voiceURI:'melo:0'},
+ {id:'assistant-bright',keyword:'清亮',text:'预警',enabled:true,style:'bright',voiceURI:'kokoro:3'},
+ {id:'retired',keyword:'旧声线',text:'原文保留',enabled:true,style:'bright',voiceURI:'kokoro:57'},
+])
+const assistantVoices = mappings.loadVoiceMappings()
+assert.equal(assistantVoices.find(v=>v.id==='assistant-standard').voiceURI,'')
+assert.equal(assistantVoices.find(v=>v.id==='assistant-bright').voiceURI,'')
+assert.equal(assistantVoices.find(v=>v.id==='retired').voiceURI,'')
+assert.equal(assistantVoices.find(v=>v.id==='retired').text,'原文保留')
+console.log('PASS: curated assistant voices survive reload; retired voices use default without losing text')
+const trialIds = ['qwen:vivian', 'qwen:serena', 'qwen:ono_anna', 'qwen:sohee']
+voiceStorage.saveVoiceSettings(trialIds.map((voiceURI,index)=>({id:`trial-${index}`,keyword:`试用${index}`,text:'系统提示',enabled:true,style:'bright',voiceURI})))
+for (const [index, voiceURI] of trialIds.entries()) {
+  assert.equal(mappings.loadVoiceMappings().find(row=>row.id===`trial-${index}`).voiceURI,voiceURI)
+}
+console.log('PASS: new local model selections persist across reload')
+
+storage.clear()
+assert.equal(preferences.loadGlobalVoice(), 'qwen:vivian')
+voiceStorage.saveVoiceSettings(newRules, 1, 'qwen:serena')
+assert.equal(preferences.loadGlobalVoice(), 'qwen:serena')
+assert.equal(mappings.resolveMappingVoice({style:'bright', voiceURI:'qwen:sohee'}).voiceURI, 'qwen:serena')
+let stopGlobal = localSpeech.speakNaturalChinese('全局声线', {}, {style:'bright',voiceURI:'qwen:sohee'})
+await tick()
+assert.equal(JSON.parse(requests.at(-1).options.body).voice, 'qwen:serena')
+stopGlobal()
+stopGlobal = localSpeech.speakNaturalChinese('草稿试听', {}, {style:'bright',voiceURI:'',previewVoiceURI:'qwen:ono_anna'})
+await tick()
+assert.equal(JSON.parse(requests.at(-1).options.body).voice, 'qwen:ono_anna')
+assert.equal(preferences.loadGlobalVoice(), 'qwen:serena')
+stopGlobal()
+const globalSnapshot = storage.get(voiceStorage.VOICE_SETTINGS_KEY)
+localStorage.setItem = () => { throw new Error('QuotaExceededError') }
+assert.throws(() => voiceStorage.saveVoiceSettings([], .85, 'qwen:sohee'), /QuotaExceededError/)
+localStorage.setItem = write
+assert.equal(storage.get(voiceStorage.VOICE_SETTINGS_KEY), globalSnapshot)
+voiceStorage.saveVoiceSettings(newRules, 1, 'qwen:sohee')
+stopGlobal = localSpeech.speakNaturalChinese('保存后播报')
+await tick()
+assert.equal(JSON.parse(requests.at(-1).options.body).voice, 'qwen:sohee')
+stopGlobal()
+console.log('PASS: global voice overrides legacy mappings, draft preview isolation, atomic save and next broadcast update')

@@ -34,3 +34,8 @@
 .vscode/
 .DS_Store
 Thumbs.db
+
+/local-tts/models/
+/local-tts/.venv*/
+/local-tts/.downloads/
+/local-tts/audio/

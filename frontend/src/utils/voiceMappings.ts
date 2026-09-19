@@ -1,5 +1,5 @@
 import { readVoiceSetting, writeVoiceSetting } from './voiceStorage'
-import { defaultVoicePreferences, defaultVoiceStyle, isVoiceStyleId, type VoicePreferences, type VoiceStyleId } from './voicePreferences'
+import { loadGlobalVoice, defaultVoicePreferences, defaultVoiceStyle, isVoiceStyleId, type VoicePreferences, type VoiceStyleId } from './voicePreferences'
 
 export interface VoiceMapping {
   id: string
@@ -8,7 +8,7 @@ export interface VoiceMapping {
   enabled: boolean
   /** Broadcast style for this field; defaults to 活力轻快. */
   style: VoiceStyleId
-  /** Broadcast voice for this field; '' uses the device's default Chinese voice. */
+   /** Local model ID; empty selects the local service default. */
   voiceURI: string
   alertBeforeSpeech?: boolean
 }
@@ -27,7 +27,7 @@ function normalizeMapping(row: Partial<VoiceMapping> & { id: string; keyword: st
   return {
     ...row,
     style: defaultVoiceStyle,
-    voiceURI: typeof row.voiceURI === 'string' ? row.voiceURI : '',
+    voiceURI: typeof row.voiceURI === 'string' && ['qwen:vivian', 'qwen:serena', 'qwen:ono_anna', 'qwen:sohee'].includes(row.voiceURI) ? row.voiceURI : '',
     alertBeforeSpeech: typeof row.alertBeforeSpeech === 'boolean' ? row.alertBeforeSpeech : row.id === 'default-alert-serious' || row.keyword === '异常预警',
   }
 }
@@ -91,14 +91,14 @@ export function matchVoiceMapping(text: string, rules = loadVoiceMappings()): Vo
 }
 
 /**
- * Speech settings for one broadcast. Each mapping owns its voice; the built-in
+ * Speech settings for one broadcast. The saved global voice applies to every mapping; the built-in
  * default (活力轻快 + device Chinese voice) applies when a field is unset.
  */
 export function resolveMappingVoice(rule?: Pick<VoiceMapping, 'style' | 'voiceURI' | 'alertBeforeSpeech'> | null): VoicePreferences {
-  if (!rule) return defaultVoicePreferences
+  if (!rule) return { ...defaultVoicePreferences, voiceURI: loadGlobalVoice() }
   return {
     style: isVoiceStyleId(rule.style) ? rule.style : defaultVoiceStyle,
-    voiceURI: typeof rule.voiceURI === 'string' ? rule.voiceURI : '',
+    voiceURI: loadGlobalVoice(),
     alertBeforeSpeech: rule.alertBeforeSpeech === true,
   }
 }

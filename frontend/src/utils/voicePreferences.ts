@@ -4,6 +4,15 @@ export const DEFAULT_SPEECH_RATE = 1
 export const MIN_SPEECH_RATE = 0.7
 export const MAX_SPEECH_RATE = 1.5
 export const SPEECH_RATE_KEY = 'bio-voice-rate'
+export const GLOBAL_VOICE_KEY = 'bio-voice-global'
+export const DEFAULT_GLOBAL_VOICE = 'qwen:vivian'
+export function normalizeGlobalVoice(value: unknown): string {
+  return typeof value === 'string' && ['qwen:vivian', 'qwen:serena', 'qwen:ono_anna', 'qwen:sohee'].includes(value) ? value : DEFAULT_GLOBAL_VOICE
+}
+export function loadGlobalVoice(): string {
+  try { return normalizeGlobalVoice(JSON.parse(readVoiceSetting(GLOBAL_VOICE_KEY) ?? 'null')) }
+  catch { return DEFAULT_GLOBAL_VOICE }
+}
 
 export function normalizeSpeechRate(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value)
@@ -17,7 +26,7 @@ export function loadSpeechRate(): number {
 }
 
 export const voiceStyles = [
-  { id: 'bright', name: '活力轻快', description: '音调轻亮、语速自然', rate: DEFAULT_SPEECH_RATE, pitch: 1.18, voiceGroup: 'bright' },
+  { id: 'bright', name: '本地模型', description: '由本地 TTS 服务合成', rate: DEFAULT_SPEECH_RATE, pitch: 1.18, voiceGroup: 'bright' },
 ] as const
 
 export type VoiceStyleId = typeof voiceStyles[number]['id']
@@ -28,12 +37,14 @@ export type VoiceGroup = typeof voiceStyles[number]['voiceGroup']
 export interface VoicePreferences {
   style: VoiceStyleId
   voiceURI: string
+  /** Settings previews only; normal broadcasts always use the saved global voice. */
+  previewVoiceURI?: string
   alertBeforeSpeech?: boolean
   /** Optional draft rate for settings previews; broadcasts use the saved global rate. */
   rate?: number
 }
 
-/** Built-in default: 活力轻快 with the device's default Chinese voice. */
+/** Empty voiceURI selects the local service default model. */
 export const defaultVoiceStyle: VoiceStyleId = 'bright'
 export const defaultVoicePreferences: VoicePreferences = { style: defaultVoiceStyle, voiceURI: '' }
 

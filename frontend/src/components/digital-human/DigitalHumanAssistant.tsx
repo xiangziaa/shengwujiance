@@ -1,3 +1,4 @@
+import { LocalTtsStatus } from '../common/LocalTtsStatus'
 import { useDraggableAssistant } from '../../utils/useDraggableAssistant'
 import { useWakeListener } from '../../utils/useWakeListener'
 import { DigitalHumanAvatar } from './DigitalHumanAvatar'
@@ -44,7 +45,7 @@ declare global {
 }
 
 const stateLabels: Record<AssistantDisplayState, string> = {
-  idle: '在线', listening: '正在聆听', thinking: '正在分析', speaking: '正在播报',
+  idle: '待命', listening: '正在聆听', thinking: '正在分析', speaking: '正在播报',
 }
 
 export function createLocalAnswer(question: string, sampleCount: number, highRiskCount: number, pendingCount: number) {
@@ -112,11 +113,10 @@ export function DigitalHumanAssistant() {
     speechSessionRef.current += 1
     try { recognition?.abort() } catch { recognition?.stop() }
     cancelSpeechRef.current?.()
-    window.speechSynthesis?.cancel()
   }, [])
 
   const speak = (text: string, voice?: VoicePreferences) => {
-    if (!sound || !('speechSynthesis' in window)) {
+    if (!sound) {
       setAssistantState('idle')
       return
     }
@@ -125,7 +125,7 @@ export function DigitalHumanAssistant() {
     cancelSpeechRef.current = speakNaturalChinese(text, {
       onStart: () => { if (speechSessionRef.current === speechSession) setAssistantState('speaking') },
       onEnd: () => { if (speechSessionRef.current === speechSession) setAssistantState('idle') },
-      onError: () => { if (speechSessionRef.current === speechSession) setAssistantState('idle') },
+      onError: error => { if (speechSessionRef.current === speechSession) { setAssistantState('idle'); message.error(error) } },
     }, voice)
   }
 
@@ -135,7 +135,6 @@ export function DigitalHumanAssistant() {
     stopListening()
     speechSessionRef.current += 1
     cancelSpeechRef.current?.()
-    window.speechSynthesis?.cancel()
     setInput('')
     setMessages((current) => [...current, { id: nextIdRef.current++, role: 'user', content: question }])
     setAssistantState('thinking')
@@ -225,7 +224,6 @@ export function DigitalHumanAssistant() {
     setSound((current) => !current)
     speechSessionRef.current += 1
     cancelSpeechRef.current?.()
-    window.speechSynthesis?.cancel()
     if (assistantState === 'speaking') setAssistantState('idle')
   }
 
@@ -237,7 +235,6 @@ export function DigitalHumanAssistant() {
     }
     speechSessionRef.current += 1
     cancelSpeechRef.current?.()
-    window.speechSynthesis?.cancel()
     setAssistantState('idle')
     setOpen(false)
   }
@@ -247,7 +244,7 @@ export function DigitalHumanAssistant() {
       <div ref={drag.ref} style={drag.style} className={`digital-human-launcher-wrap ${drag.dragging ? 'is-dragging' : ''}`}>
         <button {...drag.handle} title="点击打开小安助手，拖动可移动位置，也可用方向键移动" className="digital-human-launcher" onClick={() => setOpen(true)} aria-label="打开小安助手">
           <DigitalHumanAvatar />
-          <span><b>小安助手</b><small><i /> {wakeEnabled ? wake.label : '在线 · 点击咨询'}</small></span>
+          <span><b>小安助手</b><small><i /> {wakeEnabled ? wake.label : '点击咨询'}</small></span>
           <Bot size={20} aria-hidden="true" />
         </button>
         <Tooltip title={wake.label} placement="left">
@@ -263,7 +260,7 @@ export function DigitalHumanAssistant() {
         <div className="digital-human-stage-head">
           <span className="digital-human-status"><i />{stateLabels[displayState]}</span>
           <div className="digital-human-stage-tools"><Tooltip title="小安设置"><Link to="/voice-settings" state={{ from: location.pathname + location.search }} className="digital-human-icon-button" aria-label="小安设置"><Settings size={18} /></Link></Tooltip>
-            <Tooltip title={wake.label}><button className={`digital-human-icon-button ${wakeEnabled ? 'active' : ''}`} onClick={toggleWake} aria-label={wake.needsActivation ? wake.label : wakeEnabled ? '关闭语音唤醒' : '开启语音唤醒'}><Ear size={18} /></button></Tooltip>
+            <LocalTtsStatus /><Tooltip title={wake.label}><button className={`digital-human-icon-button ${wakeEnabled ? 'active' : ''}`} onClick={toggleWake} aria-label={wake.needsActivation ? wake.label : wakeEnabled ? '关闭语音唤醒' : '开启语音唤醒'}><Ear size={18} /></button></Tooltip>
             <Tooltip title={sound ? '关闭语音播报' : '开启语音播报'}><button className="digital-human-icon-button" onClick={toggleSound} aria-label={sound ? '关闭语音播报' : '开启语音播报'}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></Tooltip>
           </div>
         </div>

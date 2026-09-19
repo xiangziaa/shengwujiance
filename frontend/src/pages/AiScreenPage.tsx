@@ -1,3 +1,4 @@
+import { LocalTtsStatus } from '../components/common/LocalTtsStatus'
 import { useNavigate } from 'react-router-dom'
 import { useWakeListener } from '../utils/useWakeListener'
 import { DigitalHumanAvatar } from '../components/digital-human/DigitalHumanAvatar'
@@ -62,7 +63,7 @@ export function AiScreenPage() {
       setAnswer(reply)
       if (!sound) { setScreenState('idle'); return }
       cancelSpeechRef.current = speakNaturalChinese(reply, {
-        onStart: () => setScreenState('speaking'), onEnd: () => setScreenState('idle'), onError: () => setScreenState('idle'),
+        onStart: () => setScreenState('speaking'), onEnd: () => setScreenState('idle'), onError: error => { setScreenState('idle'); message.error(error) },
       })
     }
   }
@@ -79,14 +80,13 @@ export function AiScreenPage() {
     if (manual && activeMapping === rule.id) { setScreenState('idle'); return }
     setAnswer(rule.text)
     if (!manual && !sound) { setScreenState('idle'); return }
-    if (!('speechSynthesis' in window)) { setScreenState('idle'); message.warning('当前浏览器不支持语音播报。'); return }
     if (manual) setSound(true)
     setActiveMapping(rule.id)
     setScreenState('thinking')
     const finish = () => { setScreenState('idle'); setActiveMapping(null) }
     cancelSpeechRef.current = speakNaturalChinese(rule.text, {
       onStart: () => setScreenState('speaking'), onEnd: finish,
-      onError: () => { finish(); message.error('语音播报失败，请重试。') },
+      onError: error => { finish(); message.error(error) },
     }, resolveMappingVoice(rule))
   }
 
@@ -133,14 +133,14 @@ export function AiScreenPage() {
     if (screenState === 'speaking' || screenState === 'thinking') setScreenState('idle')
   }
 
-  const stateText = { idle: '在线待命', listening: '正在聆听', thinking: '正在分析', speaking: '自然语音播报中' }[screenState]
+  const stateText = { idle: '待命', listening: '正在聆听', thinking: '正在分析', speaking: '自然语音播报中' }[screenState]
 
   return (
     <div className={`ai-screen is-${screenState}`}>
       <div className="ai-screen-atmosphere" aria-hidden="true"><i /><i /><i /><i /></div>
       <header className="ai-screen-header">
         <div className="ai-screen-brand"><span><Sparkles size={20} /></span><div><strong>粮安智检 AI 大屏</strong><small>BIOTECH INTELLIGENCE CENTER</small></div></div>
-        <div className="ai-screen-header-tools">
+        <div className="ai-screen-header-tools"><LocalTtsStatus />
           <button className="ai-screen-settings" onClick={() => navigate('/voice-settings', { state: { from: '/ai-screen' } })} aria-label="小安设置"><Settings2 size={17} /><span>小安设置</span></button>
           <button className={`ai-screen-wake ${wakeEnabled ? 'active' : ''}`} onClick={toggleWake} aria-label={wake.needsActivation ? wake.label : wakeEnabled ? '关闭AI大屏语音唤醒' : '开启AI大屏语音唤醒'}><Ear size={17} /><span>{wake.label}</span></button>
           <div className="ai-screen-clock"><i /><span>{stateText}</span></div>
