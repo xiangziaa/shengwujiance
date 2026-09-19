@@ -38,4 +38,8 @@ Thumbs.db
 /local-tts/models/
 /local-tts/.venv*/
 /local-tts/.downloads/
-/local-tts/audio/
+/local-tts/audio/*
+!/local-tts/audio/qwen-*/
+/local-tts/audio/qwen-*/*
+!/local-tts/audio/qwen-*/*.wav
+!/local-tts/audio/*.json
