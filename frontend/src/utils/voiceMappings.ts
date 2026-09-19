@@ -2,6 +2,8 @@ import { readVoiceSetting, writeVoiceSetting } from './voiceStorage'
 import { loadGlobalVoice, defaultVoicePreferences, defaultVoiceStyle, isVoiceStyleId, type VoicePreferences, type VoiceStyleId } from './voicePreferences'
 
 export interface VoiceMapping {
+  audioId?: string
+  audioName?: string
   id: string
   keyword: string
   text: string
@@ -94,11 +96,12 @@ export function matchVoiceMapping(text: string, rules = loadVoiceMappings()): Vo
  * Speech settings for one broadcast. The saved global voice applies to every mapping; the built-in
  * default (活力轻快 + device Chinese voice) applies when a field is unset.
  */
-export function resolveMappingVoice(rule?: Pick<VoiceMapping, 'style' | 'voiceURI' | 'alertBeforeSpeech'> | null): VoicePreferences {
+export function resolveMappingVoice(rule?: Pick<VoiceMapping, 'style' | 'voiceURI' | 'alertBeforeSpeech' | 'audioId'> | null): VoicePreferences {
   if (!rule) return { ...defaultVoicePreferences, voiceURI: loadGlobalVoice() }
   return {
     style: isVoiceStyleId(rule.style) ? rule.style : defaultVoiceStyle,
     voiceURI: loadGlobalVoice(),
     alertBeforeSpeech: rule.alertBeforeSpeech === true,
+    audioId: rule.audioId,
   }
 }

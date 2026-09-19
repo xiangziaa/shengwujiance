@@ -7,7 +7,7 @@ const localStorage = {getItem: k => storage.get(k) ?? null, setItem: (k,v) => st
 function load(file, globals = {}, imports = {}) {
   const exports = {}
   const code = ts.transpileModule(readFileSync(new URL('../src/' + file, import.meta.url), 'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText
-  vm.runInNewContext(code,{ exports, require: k => imports[k] ?? (k === './voiceStorage' ? voiceStorage : undefined), localStorage, ...globals })
+  vm.runInNewContext(code,{ exports, require: k => imports[k] ?? (k === './localAsr' ? { LocalRecognition: globals.window.SpeechRecognition, localAsrSupported: () => true } : k === './voiceStorage' ? voiceStorage : undefined), localStorage, ...globals })
   return exports
 }
 const dispatched = []
@@ -212,84 +212,43 @@ storage.set('bio-voice-mappings', JSON.stringify([{id:'default-alert-serious',ke
 assert.equal(mappings.loadVoiceMappings()[0].alertBeforeSpeech, true)
 console.log('PASS: fourth default warning enabled, both checkbox states persist across reload, legacy missing default and global rate preservation')
 
-// Local TTS lifecycle: order, cancellation during fetch/play, failures and rate.
-const audios = []; const revoked = []; const requests = []
-let responder = async () => ({ok:true, headers:{get:()=> 'audio/wav'}, blob:async()=>({size:50})})
+// File-only playback: no synthesis, full audio, alarm order, cancellation and errors.
+const audios = [], revoked = []
+let read = async id => new Blob(['audio'])
 class LocalAudio {
   constructor(url) { this.url=url; audios.push(this) }
   play() { return Promise.resolve() }
   pause() { this.paused=true }
 }
-const localSpeech=load('utils/naturalSpeech.ts', {
-  window:{setTimeout,clearTimeout}, AbortController, Audio:LocalAudio,
+const speech=load('utils/naturalSpeech.ts', {
+  AbortController, Audio:LocalAudio,
   URL:{createObjectURL:()=> 'blob:test', revokeObjectURL:url=>revoked.push(url)},
-  fetch:async(url, options)=>{ requests.push({url,options}); return responder() },
-}, {'./voicePreferences':preferences,'./localTts':{TTS_URL:'http://127.0.0.1:8765'},'../assets/xiaoan-alert.wav':'alert.wav'})
+  fetch:()=>{throw new Error('File playback must not use network')},
+}, {'./voicePreferences':preferences,'./audioFiles':{readAudioFile:id=>read(id)},'../assets/xiaoan-alert.wav':'alert.wav'})
 const tick=()=>new Promise(resolve=>setImmediate(resolve))
-let starts=0, ends=0, errors=0
-localSpeech.speakNaturalChinese('ELISA', {onStart:()=>starts++,onEnd:()=>ends++,onError:()=>errors++}, {style:'bright',voiceURI:'piper:zh_CN-huayan-medium',rate:1.2,alertBeforeSpeech:true})
+let starts=0, ends=0, errors=[]
+const handlers={onStart:()=>starts++,onEnd:()=>ends++,onError:error=>errors.push(error)}
+speech.speakNaturalChinese('',handlers,{style:'bright',voiceURI:'',audioId:'file-1',alertBeforeSpeech:true})
 await tick()
 assert.equal(audios.at(-1).url,'alert.wav')
-assert.equal(JSON.parse(requests.at(-1).options.body).rate,1.2)
-assert.equal(JSON.parse(requests.at(-1).options.body).text,'酶联免疫吸附检测')
 audios.at(-1).onended(); await tick()
 assert.equal(audios.at(-1).url,'blob:test')
 audios.at(-1).onended(); await tick()
-assert.equal(starts,1); assert.equal(ends,1); assert.equal(errors,0); assert.ok(revoked.length)
+assert.equal(starts,1);assert.equal(ends,1);assert.equal(revoked.length,1)
+const audioCount=audios.length
+speech.speakNaturalChinese('No audio selected',handlers)
+await tick();assert.equal(audios.length,audioCount);assert.equal(ends,2)
 let release
-responder=()=>new Promise(resolve=>{release=resolve})
-const before=audios.length
-const stop=localSpeech.speakNaturalChinese('取消下载',{onEnd:()=>ends++})
-stop(); release({ok:true,headers:{get:()=> 'audio/wav'},blob:async()=>({size:50})}); await tick()
-assert.equal(audios.length,before); assert.equal(ends,1); assert.equal(requests.at(-1).options.signal.aborted,true)
-responder=async()=>{throw new TypeError('network')}
-localSpeech.speakNaturalChinese('断线',{onError:()=>errors++}); await tick(); assert.equal(errors,1)
-responder=async()=>({ok:true,headers:{get:()=> 'audio/wav'},blob:async()=>({size:50})})
-const stopAlert=localSpeech.speakNaturalChinese('停止警报',{onEnd:()=>ends++},{style:'bright',voiceURI:'',alertBeforeSpeech:true})
-await tick(); const alertCount=audios.length; stopAlert(); await tick(); assert.equal(audios.length,alertCount); assert.equal(ends,1)
-assert.equal(mappings.loadVoiceMappings().some(row=>row.voiceURI==='serious'),false)
-console.log('PASS: local TTS rate, normalized text, alert order, cleanup, cancellation and offline-service error')
-
-voiceStorage.saveVoiceSettings([
- {id:'assistant-standard',keyword:'标准',text:'检测结果',enabled:true,style:'bright',voiceURI:'melo:0'},
- {id:'assistant-bright',keyword:'清亮',text:'预警',enabled:true,style:'bright',voiceURI:'kokoro:3'},
- {id:'retired',keyword:'旧声线',text:'原文保留',enabled:true,style:'bright',voiceURI:'kokoro:57'},
-])
-const assistantVoices = mappings.loadVoiceMappings()
-assert.equal(assistantVoices.find(v=>v.id==='assistant-standard').voiceURI,'')
-assert.equal(assistantVoices.find(v=>v.id==='assistant-bright').voiceURI,'')
-assert.equal(assistantVoices.find(v=>v.id==='retired').voiceURI,'')
-assert.equal(assistantVoices.find(v=>v.id==='retired').text,'原文保留')
-console.log('PASS: curated assistant voices survive reload; retired voices use default without losing text')
-const trialIds = ['qwen:vivian', 'qwen:serena', 'qwen:ono_anna', 'qwen:sohee']
-voiceStorage.saveVoiceSettings(trialIds.map((voiceURI,index)=>({id:`trial-${index}`,keyword:`试用${index}`,text:'系统提示',enabled:true,style:'bright',voiceURI})))
-for (const [index, voiceURI] of trialIds.entries()) {
-  assert.equal(mappings.loadVoiceMappings().find(row=>row.id===`trial-${index}`).voiceURI,voiceURI)
-}
-console.log('PASS: new local model selections persist across reload')
-
-storage.clear()
-assert.equal(preferences.loadGlobalVoice(), 'qwen:vivian')
-voiceStorage.saveVoiceSettings(newRules, 1, 'qwen:serena')
-assert.equal(preferences.loadGlobalVoice(), 'qwen:serena')
-assert.equal(mappings.resolveMappingVoice({style:'bright', voiceURI:'qwen:sohee'}).voiceURI, 'qwen:serena')
-let stopGlobal = localSpeech.speakNaturalChinese('全局声线', {}, {style:'bright',voiceURI:'qwen:sohee'})
-await tick()
-assert.equal(JSON.parse(requests.at(-1).options.body).voice, 'qwen:serena')
-stopGlobal()
-stopGlobal = localSpeech.speakNaturalChinese('草稿试听', {}, {style:'bright',voiceURI:'',previewVoiceURI:'qwen:ono_anna'})
-await tick()
-assert.equal(JSON.parse(requests.at(-1).options.body).voice, 'qwen:ono_anna')
-assert.equal(preferences.loadGlobalVoice(), 'qwen:serena')
-stopGlobal()
-const globalSnapshot = storage.get(voiceStorage.VOICE_SETTINGS_KEY)
-localStorage.setItem = () => { throw new Error('QuotaExceededError') }
-assert.throws(() => voiceStorage.saveVoiceSettings([], .85, 'qwen:sohee'), /QuotaExceededError/)
-localStorage.setItem = write
-assert.equal(storage.get(voiceStorage.VOICE_SETTINGS_KEY), globalSnapshot)
-voiceStorage.saveVoiceSettings(newRules, 1, 'qwen:sohee')
-stopGlobal = localSpeech.speakNaturalChinese('保存后播报')
-await tick()
-assert.equal(JSON.parse(requests.at(-1).options.body).voice, 'qwen:sohee')
-stopGlobal()
-console.log('PASS: global voice overrides legacy mappings, draft preview isolation, atomic save and next broadcast update')
+read=()=>new Promise(resolve=>{release=resolve})
+const cancel=speech.speakNaturalChinese('取消',handlers,{style:'bright',voiceURI:'',audioId:'file-1'})
+cancel();release(new Blob(['audio']));await tick()
+assert.equal(audios.length,audioCount);assert.equal(ends,2)
+read=async()=>{throw new Error('音频不存在')}
+speech.speakNaturalChinese('missing',handlers,{style:'bright',voiceURI:'',audioId:'missing'})
+await tick();assert.equal(errors.length,1)
+voiceStorage.saveVoiceSettings([{id:'audio-only',keyword:'播放',text:'',enabled:true,style:'bright',voiceURI:'',audioId:'saved-file',audioName:'通知.mp3'}])
+const audioRule=mappings.loadVoiceMappings().find(row=>row.id==='audio-only')
+assert.equal(audioRule.audioName,'通知.mp3')
+assert.equal(mappings.resolveMappingVoice(audioRule).audioId,'saved-file')
+assert.equal(mappings.matchVoiceMapping('请播放', [audioRule]).id,'audio-only')
+console.log('PASS: file-only playback, audio-only mapping persistence, no network, alarm ordering, cancellation and missing-file error')

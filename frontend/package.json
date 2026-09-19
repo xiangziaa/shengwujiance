@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --pretty false",
-    "test": "node tests/voice.test.mjs && node tests/dashboard-dates.test.mjs"
+    "test": "node tests/local-asr.test.mjs && node tests/voice.test.mjs && node tests/dashboard-dates.test.mjs"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",

@@ -6,8 +6,9 @@ export const MAX_SPEECH_RATE = 1.5
 export const SPEECH_RATE_KEY = 'bio-voice-rate'
 export const GLOBAL_VOICE_KEY = 'bio-voice-global'
 export const DEFAULT_GLOBAL_VOICE = 'qwen:vivian'
+export const XIAOXIAO_VOICE = 'microsoft:xiaoxiao'
 export function normalizeGlobalVoice(value: unknown): string {
-  return typeof value === 'string' && ['qwen:vivian', 'qwen:serena', 'qwen:ono_anna', 'qwen:sohee'].includes(value) ? value : DEFAULT_GLOBAL_VOICE
+  return typeof value === 'string' && ['qwen:vivian', 'qwen:serena', 'qwen:ono_anna', 'qwen:sohee', XIAOXIAO_VOICE].includes(value) ? value : DEFAULT_GLOBAL_VOICE
 }
 export function loadGlobalVoice(): string {
   try { return normalizeGlobalVoice(JSON.parse(readVoiceSetting(GLOBAL_VOICE_KEY) ?? 'null')) }
@@ -35,6 +36,7 @@ export type VoiceGroup = typeof voiceStyles[number]['voiceGroup']
 
 /** Fully specified speech settings after a mapping has been resolved. */
 export interface VoicePreferences {
+  audioId?: string
   style: VoiceStyleId
   voiceURI: string
   /** Settings previews only; normal broadcasts always use the saved global voice. */

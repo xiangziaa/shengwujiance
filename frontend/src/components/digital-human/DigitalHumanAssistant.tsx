@@ -1,3 +1,4 @@
+import { LocalRecognition, localAsrSupported } from '../../utils/localAsr'
 import { useDraggableAssistant } from '../../utils/useDraggableAssistant'
 import { useWakeListener } from '../../utils/useWakeListener'
 import { DigitalHumanAvatar } from './DigitalHumanAvatar'
@@ -13,35 +14,6 @@ import { resolveMappingVoice, type VoiceMapping } from '../../utils/voiceMapping
 type AssistantState = 'idle' | 'thinking' | 'speaking'
 type AssistantDisplayState = AssistantState | 'listening'
 type ChatMessage = { id: number; role: 'assistant' | 'user'; content: string }
-
-interface SpeechRecognitionEventLike extends Event {
-  resultIndex: number
-  results: { length: number; [index: number]: { isFinal: boolean; [index: number]: { transcript: string } } }
-}
-
-interface SpeechRecognitionErrorEventLike extends Event { error: string }
-
-interface SpeechRecognitionLike {
-  lang: string
-  interimResults: boolean
-  continuous: boolean
-  start: () => void
-  stop: () => void
-  abort: () => void
-  onstart: (() => void) | null
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null
-  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null
-  onend: (() => void) | null
-}
-
-type SpeechRecognitionConstructor = new () => SpeechRecognitionLike
-
-declare global {
-  interface Window {
-    SpeechRecognition?: SpeechRecognitionConstructor
-    webkitSpeechRecognition?: SpeechRecognitionConstructor
-  }
-}
 
 const stateLabels: Record<AssistantDisplayState, string> = {
   idle: '待命', listening: '正在聆听', thinking: '正在分析', speaking: '正在播报',
@@ -71,7 +43,7 @@ export function DigitalHumanAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: 1, role: 'assistant', content: '您好，我是生物检测智能助手小安。点击麦克风或输入问题即可开始。' },
   ])
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+  const recognitionRef = useRef<LocalRecognition | null>(null)
   const recognitionTimerRef = useRef<number | null>(null)
   const answerTimerRef = useRef<number | null>(null)
   const speechSessionRef = useRef(0)
@@ -147,7 +119,7 @@ export function DigitalHumanAssistant() {
 
   const wake = useWakeListener(wakeEnabled, isListening || assistantState !== 'idle', (rule: VoiceMapping) => {
     setOpen(true)
-    setMessages(current => [...current, { id: nextIdRef.current++, role: 'assistant', content: rule.text }])
+    setMessages(current => [...current, { id: nextIdRef.current++, role: 'assistant', content: rule.text || `正在播放：${rule.keyword}` }])
     if (sound) setAssistantState('thinking')
     // A keyword mapping may pin its own speaker and style; otherwise it inherits 语音选项.
     speak(rule.text, resolveMappingVoice(rule))
@@ -155,7 +127,7 @@ export function DigitalHumanAssistant() {
 
   const toggleWake = () => {
     if (wake.needsActivation) { wake.activate(); return }
-    if (!wakeEnabled && !(window.SpeechRecognition ?? window.webkitSpeechRecognition)) {
+    if (!wakeEnabled && !localAsrSupported()) {
       message.warning('当前浏览器不支持语音唤醒，请使用 Chrome 或 Edge。')
       return
     }
@@ -169,7 +141,7 @@ export function DigitalHumanAssistant() {
       stopListening()
       return
     }
-    const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition
+    const Recognition = localAsrSupported() ? LocalRecognition : undefined
     if (!Recognition) {
       message.warning('当前浏览器不支持语音识别，请使用 Chrome 或 Edge，或直接输入文字。')
       return
@@ -194,7 +166,7 @@ export function DigitalHumanAssistant() {
         clearRecognitionTimer()
         setIsListening(false)
       }
-      if (event.error !== 'aborted') message.error('没有识别到语音，请检查麦克风权限后重试。')
+      if (event.error !== 'aborted') message.error('语音识别失败，请确认本地 ASR 服务已启动并允许麦克风权限。')
     }
     recognition.onend = () => {
       if (recognitionRef.current === recognition) {

@@ -584,3 +584,35 @@ button { cursor: pointer; }
 .local-tts-status { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .local-tts-status.details { padding: 18px 20px; margin-bottom: 22px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .local-tts-status.details > div { flex-basis: 100%; color: var(--muted); font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+
+/* File playback settings: keyword and file together, actions on one baseline. */
+.audio-settings-page > .ant-alert { margin-bottom: 20px; }
+.audio-settings-page .voice-rule-header { padding: 14px 20px; }
+.audio-settings-page .voice-rule-controls .ant-btn { margin-left: 0; }
+.audio-rule-body { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr); gap: 24px; padding: 24px 20px; }
+.audio-keyword-field, .audio-file-field { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.audio-keyword-field label, .audio-field-label { font-size: 14px; font-weight: 600; color: var(--text); }
+.audio-keyword-field .ant-input { min-height: 44px; }
+.audio-keyword-field small, .audio-file-summary small { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.audio-file-box { display: flex; align-items: center; gap: 12px; min-height: 84px; padding: 16px; border: 1px dashed var(--border); border-radius: 10px; background: #f8fafc; }
+.audio-file-box.has-file { border-style: solid; background: #f4f8ff; border-color: #dbe8ff; }
+.audio-file-box > svg { flex-shrink: 0; color: var(--primary); }
+.audio-file-summary { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.audio-file-summary strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.audio-file-input { display: none; }
+.audio-file-box .ant-btn { flex-shrink: 0; }
+.audio-rule-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding: 16px 20px; border-top: 1px solid var(--border); }
+.audio-rule-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.audio-settings-page .audio-rule-actions .ant-btn, .audio-settings-page .audio-file-box .ant-btn, .audio-settings-page .xiaoan-save-bar .ant-btn { height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin: 0; }
+.audio-rule-actions .ant-btn { min-width: 120px; }
+.audio-rule-footer .ant-checkbox-wrapper { min-height: 44px; align-items: center; }
+@media (max-width: 760px) {
+  .audio-rule-body { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 20px 16px; }
+  .audio-rule-footer { padding: 16px; align-items: stretch; flex-direction: column; gap: 12px; }
+  .audio-rule-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .audio-rule-actions .ant-btn { min-width: 0; padding-inline: 8px; }
+  .audio-file-box { flex-wrap: wrap; }
+  .audio-file-summary { min-width: 120px; }
+  .audio-settings-page .xiaoan-save-bar { flex-wrap: wrap; }
+  .audio-settings-page .voice-rule-title strong { white-space: normal; overflow-wrap: anywhere; }
+}

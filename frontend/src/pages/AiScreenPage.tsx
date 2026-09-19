@@ -1,4 +1,4 @@
-import { LocalTtsStatus } from '../components/common/LocalTtsStatus'
+import { LocalRecognition, localAsrSupported } from '../utils/localAsr'
 import { useNavigate } from 'react-router-dom'
 import { useWakeListener } from '../utils/useWakeListener'
 import { DigitalHumanAvatar } from '../components/digital-human/DigitalHumanAvatar'
@@ -21,9 +21,9 @@ export function AiScreenPage() {
   const [wakeEnabled, setWakeEnabled] = useState(true)
   const [voiceMappings, setVoiceMappings] = useState(loadVoiceMappings)
   const [activeMapping, setActiveMapping] = useState<string | null>(null)
-  const manualMappings = voiceMappings.filter(rule => rule.enabled && rule.keyword.trim() && rule.text.trim())
+  const manualMappings = voiceMappings.filter(rule => rule.enabled && rule.keyword.trim() && (rule.audioId || rule.text.trim()))
   const navigate = useNavigate()
-  const recognitionRef = useRef<InstanceType<NonNullable<typeof window.SpeechRecognition>> | null>(null)
+  const recognitionRef = useRef<LocalRecognition | null>(null)
   const cancelSpeechRef = useRef<(() => void) | null>(null)
   const answerTimerRef = useRef<number | null>(null)
   const highRisk = useMemo(() => samples.filter((sample) => sample.riskLevel.includes('高')).length, [samples])
@@ -78,7 +78,7 @@ export function AiScreenPage() {
     cancelSpeechRef.current?.()
     setActiveMapping(null)
     if (manual && activeMapping === rule.id) { setScreenState('idle'); return }
-    setAnswer(rule.text)
+    setAnswer(rule.text || `正在播放：${rule.keyword}`)
     if (!manual && !sound) { setScreenState('idle'); return }
     if (manual) setSound(true)
     setActiveMapping(rule.id)
@@ -94,7 +94,7 @@ export function AiScreenPage() {
 
   const toggleWake = () => {
     if (wake.needsActivation) { wake.activate(); return }
-    if (!wakeEnabled && !(window.SpeechRecognition ?? window.webkitSpeechRecognition)) {
+    if (!wakeEnabled && !localAsrSupported()) {
       message.warning('当前浏览器不支持语音唤醒，请使用 Chrome 或 Edge。')
       return
     }
@@ -107,7 +107,7 @@ export function AiScreenPage() {
     if (screenState === 'listening') {
       recognitionRef.current?.abort(); recognitionRef.current = null; setScreenState('idle'); return
     }
-    const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition
+    const Recognition = localAsrSupported() ? LocalRecognition : undefined
     if (!Recognition) { message.warning('当前浏览器不支持语音识别，请使用 Chrome 或 Edge。'); return }
     cancelSpeechRef.current?.()
     setActiveMapping(null)
@@ -119,7 +119,7 @@ export function AiScreenPage() {
       recognition.abort(); recognitionRef.current = null
       if (text) ask(text)
     }
-    recognition.onerror = () => { recognitionRef.current = null; setScreenState('idle') }
+    recognition.onerror = () => { recognitionRef.current = null; setScreenState('idle'); message.error('语音识别失败，请启动本地 ASR 服务并允许麦克风权限。') }
     recognition.onend = () => {
       if (recognitionRef.current === recognition) { recognitionRef.current = null; setScreenState('idle') }
     }
@@ -140,7 +140,7 @@ export function AiScreenPage() {
       <div className="ai-screen-atmosphere" aria-hidden="true"><i /><i /><i /><i /></div>
       <header className="ai-screen-header">
         <div className="ai-screen-brand"><span><Sparkles size={20} /></span><div><strong>粮安智检 AI 大屏</strong><small>BIOTECH INTELLIGENCE CENTER</small></div></div>
-        <div className="ai-screen-header-tools"><LocalTtsStatus />
+        <div className="ai-screen-header-tools">
           <button className="ai-screen-settings" onClick={() => navigate('/voice-settings', { state: { from: '/ai-screen' } })} aria-label="小安设置"><Settings2 size={17} /><span>小安设置</span></button>
           <button className={`ai-screen-wake ${wakeEnabled ? 'active' : ''}`} onClick={toggleWake} aria-label={wake.needsActivation ? wake.label : wakeEnabled ? '关闭AI大屏语音唤醒' : '开启AI大屏语音唤醒'}><Ear size={17} /><span>{wake.label}</span></button>
           <div className="ai-screen-clock"><i /><span>{stateText}</span></div>

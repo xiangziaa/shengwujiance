@@ -1,3 +1,4 @@
+import { LocalRecognition, localAsrSupported } from './localAsr'
 import { VOICE_SETTINGS_EVENT, VOICE_SETTINGS_KEY } from './voiceStorage'
 import { useEffect, useRef, useState } from 'react'
 import { message } from 'antd'
@@ -43,7 +44,7 @@ export function useWakeListener(enabled: boolean, busy: boolean, onMatch: (rule:
     setListening(false)
     setReconnecting(false)
     if (!enabled || busy || !activated) return
-    const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition
+    const Recognition = localAsrSupported() ? LocalRecognition : undefined
     if (!Recognition) { disable.current(); return }
     let disposed = false
     let handled = false
@@ -70,10 +71,10 @@ export function useWakeListener(enabled: boolean, busy: boolean, onMatch: (rule:
       recognition.onerror = event => {
         if (disposed) return
         setListening(false)
-        if (['not-allowed', 'service-not-allowed', 'audio-capture'].includes(event.error)) {
+        if (['not-allowed', 'service-not-allowed', 'audio-capture', 'local-asr-unavailable'].includes(event.error)) {
           disposed = true
           disable.current()
-          message.error('无法使用麦克风，请检查设备及浏览器权限后重新开启语音唤醒。')
+          message.error('请启动本地 ASR 服务（local-asr/start-local-asr.ps1），允许麦克风权限后重新开启语音唤醒。')
         } else if (event.error !== 'aborted') {
           setReconnecting(true)
         }
